@@ -20,6 +20,11 @@ def load_data_fashion_mnist(batch_size, resize=None):
             data.DataLoader(mnist_test, batch_size, shuffle=False,
                             num_workers=4))
 
+def load_array(data_arrays, batch_size, is_train=True):
+    """Construct a PyTorch data iterator."""
+    dataset = data.TensorDataset(*data_arrays)
+    return data.DataLoader(dataset, batch_size, shuffle=is_train)
+
 def accuracy(y_hat, y):  #@save
     """计算预测正确的数量"""
     if len(y_hat.shape) > 1 and y_hat.shape[1] > 1:
@@ -38,6 +43,15 @@ def evaluate_accuracy(net, data_iter):  #@save
             metric.add(accuracy(net(X), y), y.numel())
     return metric[0] / metric[1]
 
+def evaluate_loss(net, data_iter, loss):
+    """Evaluate the loss of a model on the given dataset."""
+    metric = d2l.Accumulator(2)  # Sum of losses, no. of examples
+    for X, y in data_iter:
+        out = net(X)
+        y = d2l.reshape(y, out.shape)
+        l = loss(out, y)
+        metric.add(d2l.reduce_sum(l), d2l.size(l))
+    return metric[0] / metric[1]
 
 class Accumulator:  #@save
     """在n个变量上累加"""
@@ -177,6 +191,7 @@ def train_ch6(net, train_iter, test_iter, num_epochs, lr,
     animator = d2l.Animator(xlabel='epoch', xlim=[1, num_epochs],
                             legend=['train loss', 'train acc', 'test acc'])
     timer, num_batches = d2l.Timer(), len(train_iter)
+    x_ = []
     loss_ = []
     acc_ = []
     testacc_ = []
@@ -200,20 +215,20 @@ def train_ch6(net, train_iter, test_iter, num_epochs, lr,
             if (i + 1) % (num_batches // 5) == 0 or i == num_batches - 1:
                 animator.add(epoch + (i + 1) / num_batches,
                              (train_l, train_acc, None))
+                x_.append(epoch + (i + 1) / num_batches)
                 loss_.append(train_l)
                 acc_.append(train_acc)
         test_acc = d2l.evaluate_accuracy_gpu(net, test_iter)
         testacc_.append(test_acc)
         animator.add(epoch + 1, (None, None, test_acc))
-        fig, ax = plt.subplots()
-        ax.plot(range(len(loss_)), loss_, label='train loss')
-        ax.plot(range(len(acc_)), acc_, label='train accuracy')
-        xtest = range(len(testacc_))
-        xtest = [i * 10 for i in xtest]
-        ax.plot(xtest, testacc_, 'o-', label='test accuracy')
-        plt.grid()
-        plt.legend()
-        plt.show()
+    fig, ax = plt.subplots()
+    ax.plot(x_, loss_, label='train loss')
+    ax.plot(x_, acc_, label='train accuracy')
+    xtest = range(len(testacc_))
+    ax.plot(xtest, testacc_, 'o-', label='test accuracy')
+    plt.grid()
+    plt.legend()
+    plt.show()
     print(f'loss {train_l:.3f}, train acc {train_acc:.3f}, '
           f'test acc {test_acc:.3f}')
     print(f'{metric[2] * num_epochs / timer.sum():.1f} examples/sec '

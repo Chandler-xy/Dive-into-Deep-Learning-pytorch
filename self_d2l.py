@@ -1,3 +1,4 @@
+"""https://github.com/d2l-ai/d2l-en/blob/master/d2l/torch.py"""
 from IPython import display
 from d2l import torch as d2l
 from torch.utils import data
@@ -250,4 +251,4 @@ def show_heatmaps(matrices, xlabel, ylabel, titles=None, figsize=(2.5, 2.5),
                 ax.set_ylabel(ylabel)
             if titles:
                 ax.set_title(titles[j])
-    fig.colorbar(pcm, ax=axes, shrink=0.6);
+    fig.colorbar(pcm, ax=axes, shrink=0.6)
